@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0f1115" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Aprende Bajo</title>
+  <style>
+    :root{ --bg:#0f1115; --fg:#e9eef5; --muted:#a8b3c7; --acc:#4cc9f0; --acc2:#ffd166; --card:#151924; --line:#243045; --hot:#ef476f; --ok:#06d6a0; }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    header{position:sticky;top:0;background:linear-gradient(180deg,var(--bg),rgba(15,17,21,.85));backdrop-filter:blur(6px);z-index:10;border-bottom:1px solid #1c2333}
+    .wrap{max-width:980px;margin:0 auto;padding:14px 16px}
+    h1{font-size:1.25rem;margin:0 0 4px}
+    .muted{color:var(--muted);font-size:.9rem}
+    main .wrap{display:grid;gap:14px}
+    section{background:var(--card);border:1px solid #1c2333;border-radius:12px;padding:12px}
+    h2{font-size:1.05rem;margin:0 0 8px}
+    label{font-size:.9rem;color:var(--muted)}
+    select,input[type="number"],input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid #263045;background:#0f1320;color:var(--fg)}
+    .row{display:grid;gap:10px}
+    .row.cols-2{grid-template-columns:1fr 1fr}
+    .row.cols-3{grid-template-columns:1fr 1fr 1fr}
+    .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;background:var(--acc);color:#001018;font-weight:700;cursor:pointer}
+    .btn.alt{background:#303b55;color:var(--fg)}
+    .btn.warn{background:var(--hot);color:white}
+    .btn.ok{background:var(--ok);color:#001813}
+    .btn:active{transform:translateY(1px)}
+    .inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .badge{background:#22314f;color:#cfe1ff;border:1px solid #2e4066;border-radius:999px;padding:4px 10px;font-size:.8rem}
+    .hint{font-size:.85rem;color:var(--muted)}
+    #boardWrap{overflow:auto;border-radius:10px;border:1px solid var(--line);background:#0c101a}
+    svg#fretboard{width:100%;height:auto;touch-action:manipulation}
+    .string{stroke:#5b6d92;stroke-width:3}
+    .fret{stroke:#2a3550;stroke-width:2}
+    .nut{stroke:#93a6d6;stroke-width:4}
+    .marker{fill:#223251}
+    .noteDot{fill:var(--acc);stroke:#003a50;stroke-width:2}
+    .noteDot.emph{fill:var(--acc2);stroke:#725c00}
+    .noteLbl{fill:#0b0f19}
+    .playing{filter:drop-shadow(0 0 8px #4cc9f0)}
+    .pos{cursor:pointer}
+    ul.clean{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+    li.card{border:1px solid #1e2740;border-radius:10px;padding:10px;background:#0e1422}
+    @media (min-width:900px){ main .wrap{grid-template-columns:1fr 1fr} #boardSection{grid-column:1/-1} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Aprende Bajo – Práctica Interactiva</h1>
+      <div class="muted">Ejercicios, escalas, arpegios, metrónomo y diapasón interactivo. Guarda tus patrones y practícalos offline.</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section id="settings">
+        <h2>⚙️ Ajustes</h2>
+        <div class="row cols-3">
+          <div>
+            <label>Cuerdas</label>
+            <select id="stringsSel">
+              <option value="EADG">4 cuerdas (E‑A‑D‑G)</option>
+              <option value="BEADG">5 cuerdas (B‑E‑A‑D‑G)</option>
+            </select>
+          </div>
+          <div>
+            <label>Trastes (12–24)</label>
+            <input type="number" id="fretsInp" min="12" max="24" step="1" value="16" />
+          </div>
+          <div>
+            <label>Modo</label>
+            <select id="handSel">
+              <option value="right">Diestro</option>
+              <option value="left">Zurdo</option>
+            </select>
+          </div>
+        </div>
+        <div class="inline" style="margin-top:8px">
+          <label class="badge"><input type="checkbox" id="showNoteNames" checked /> &nbsp;Ver nombres de notas</label>
+          <label class="badge"><input type="checkbox" id="flatsMode" /> &nbsp;Usar ♭ en vez de ♯</label>
+        </div>
+      </section>
+
+      <section id="metro">
+        <h2>⏱️ Metrónomo</h2>
+        <div class="row cols-3">
+          <div>
+            <label>BPM</label>
+            <input type="number" id="bpm" value="80" min="30" max="240" />
+          </div>
+          <div>
+            <label>Compás</label>
+            <select id="meter">
+              <option value="4">4/4</option>
+              <option value="3">3/4</option>
+              <option value="2">2/4</option>
+            </select>
+          </div>
+          <div class="inline" style="margin-top:20px">
+            <button class="btn ok" id="startMetro">Iniciar</button>
+            <button class="btn warn" id="stopMetro">Detener</button>
+          </div>
+        </div>
+        <div class="hint">Consejo: practica lento y sólido. Sube BPM de forma gradual (5–10 BPM) al tocar limpio.</div>
+      </section>
+
+      <section id="boardSection">
+        <h2>🎯 Diapasón (toca o toca para sonar)</h2>
+        <div id="boardWrap">
+          <svg id="fretboard" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diapasón del bajo"></svg>
+        </div>
+        <div class="hint">Pulsa en los puntos para oír un tono guía (no es un sampler, es un tono de referencia).</div>
+      </section>
+
+      <section id="exercises">
+        <h2>📝 Ejercicios</h2>
+        <div class="row cols-3">
+          <div>
+            <label>Tipo</label>
+            <select id="exerciseType">
+              <option value="fingering">Digitación 1‑2‑3‑4</option>
+              <option value="scale_major">Escala Mayor</option>
+              <option value="scale_minor">Escala Menor natural</option>
+              <option value="penta_major">Pentatónica Mayor</option>
+              <option value="penta_minor">Pentatónica Menor</option>
+              <option value="blues">Escala Blues</option>
+              <option value="arp_maj">Arpegio Mayor</option>
+              <option value="arp_min">Arpegio Menor</option>
+              <option value="arp_dom7">Arpegio 7 (dominante)</option>
+              <option value="arp_min7">Arpegio m7</option>
+              <option value="arp_maj7">Arpegio maj7</option>
+              <option value="riff_blues">Riff: Blues 12 compases (básico)</option>
+            </select>
+          </div>
+          <div>
+            <label>Tono</label>
+            <select id="keySel"></select>
+          </div>
+          <div>
+            <label>Traste base (caja)</label>
+            <input type="number" id="boxFret" min="0" max="20" value="5" />
+          </div>
+        </div>
+        <div class="inline" style="margin-top:8px">
+          <button class="btn" id="showOnBoard">Mostrar en diapasón</button>
+          <button class="btn alt" id="playSeq">Reproducir secuencia</button>
+          <button class="btn alt" id="clearBoard">Limpiar</button>
+        </div>
+        <div class="hint">Consejos de técnica: usa alternancia de dedos índice‑medio (1‑2) en la mano derecha; en la izquierda, procura un dedo por traste (1‑2‑3‑4) sin tensión, con el pulgar detrás del mástil.</div>
+      </section>
+
+      <section id="songs">
+        <h2>📚 Patrones / Canciones (tuyas)</h2>
+        <p class="hint">Por derechos de autor, no incluimos tablaturas comerciales. Aquí puedes guardar tus patrones, grooves o progresiones.</p>
+        <div class="row">
+          <div>
+            <label>Título</label>
+            <input type="text" id="songTitle" placeholder="Ej.: Groove funk en Mi (E)" />
+          </div>
+          <div>
+            <label>Tono base</label>
+            <select id="songKey"></select>
+          </div>
+          <div>
+            <label>Secuencia (notas o posiciones)</label>
+            <input type="text" id="songSeq" placeholder="Ej.: Mi2 Sol2 La2 Si2 | La2 Do3 Re3 Mi3 ..." />
+          </div>
+          <div class="inline">
+            <button class="btn" id="addSong">Guardar patrón</button>
+          </div>
+        </div>
+        <ul id="songList" class="clean" aria-live="polite"></ul>
+      </section>
+
+      <section>
+        <h2>ℹ️ Ayuda rápida</h2>
+        <ul>
+          <li>Toque <strong>limpio</strong> > toque <strong>rápido</strong>. Primero precisión, luego velocidad.</li>
+          <li>Relaja hombros y muñecas. Mantén el codo cerca del cuerpo y la muñeca neutra.</li>
+          <li>Para rítmica sólida: metrónomo al 2 y 4 (marca el acento con el pie).</li>
+          <li>Escucha tu sonido: toca cerca del traste, usa la yema de los dedos, controla la dinámica.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // Nombres de notas en español y equivalencias
+    const ES_SHARP = ['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+    const ES_FLAT  = ['Do','Reb','Re','Mib','Mi','Fa','Solb','Sol','Lab','La','Sib','Si'];
+    const EN_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const EN_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+    // Afinaciones (para audio se usan letras EN)
+    const TUNINGS = {
+      'EADG': ['E1','A1','D2','G2'],
+      'BEADG': ['B0','E1','A1','D2','G2']
+    };
+
+    // Mapeo nombre -> índice [0..11], acepta español o inglés
+    function noteIndex(n){
+      if(!n) return 0;
+      const up = n.trim().toUpperCase();
+      const sets = [EN_SHARP, EN_FLAT, ES_SHARP, ES_FLAT];
+      for(const arr of sets){
+        for(let i=0;i<12;i++){
+          if(arr[i].toUpperCase()===up) return i;
+        }
+      }
+      return 0;
+    }
+
+    // Mostrar nombre según modo ♯/♭ (en español)
+    function nameFromIdx(idx, flats=false){
+      idx = (idx%12+12)%12;
+      return flats ? ES_FLAT[idx] : ES_SHARP[idx];
+    }
+
+    // Parser de alturas para audio (usa letras EN A-G con octava)
+    function parsePitch(p){
+      const m = /^([A-Ga-g])(#|b)?(\d+)$/.exec(p.trim());
+      if(!m) return {name:'A', idx:9, octave:2};
+      const name = (m[1].toUpperCase() + (m[2]||''));
+      const idx = EN_SHARP.indexOf(name) >= 0 ? EN_SHARP.indexOf(name) : EN_FLAT.indexOf(name);
+      return {name, idx: (idx>=0?idx:9), octave: parseInt(m[3],10)};
+    }
+
+    function addSemis(pitch, semis){
+      const base = parsePitch(pitch);
+      const total = base.idx + semis;
+      const idx = (total % 12 + 12) % 12;
+      const octave = base.octave + Math.floor((base.idx + semis)/12);
+      return {idx, octave};
+    }
+
+    // Audio
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const AC = new AudioCtx();
+    let metroTimer = null, metroCount = 0;
+    function clickSound(accent=false){
+      const o = AC.createOscillator(); const g = AC.createGain();
+      o.type='square'; o.frequency.value = accent ? 1200 : 900;
+      g.gain.value = 0.0001; o.connect(g); g.connect(AC.destination);
+      const now = AC.currentTime;
+      g.gain.exponentialRampToValueAtTime(accent?0.6:0.4, now+0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.08);
+      o.start(now); o.stop(now+0.09);
+    }
+    function playPitch(freq){
+      const o = AC.createOscillator(); const g = AC.createGain();
+      o.type='sine'; o.frequency.value = freq; g.gain.value = 0.0001;
+      o.connect(g); g.connect(AC.destination);
+      const now = AC.currentTime;
+      g.gain.exponentialRampToValueAtTime(0.35, now+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.45);
+      o.start(now); o.stop(now+0.5);
+    }
+    function freqFromMidi(m){ return 440 * Math.pow(2, (m-69)/12); }
+    function midiFromPitch(p){ const {idx, octave} = parsePitch(p); return (octave+1)*12 + idx; }
+
+    // SVG Diapasón
+    const svg = document.getElementById('fretboard');
+    let state = { strings: 'EADG', frets: 16, lefty: false, showNames: true, flats: false };
+
+    function buildBoard(){
+      const W = Math.max(900, state.frets*60);
+      const H = (getTuning().length * 70) + 60;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.innerHTML = '';
+      const marginL = 60, marginR = 20, marginT = 30, marginB = 30;
+      const usableW = W - marginL - marginR;
+      const usableH = H - marginT - marginB;
+      const strCount = getTuning().length;
+      const strGap = usableH/(strCount-1 || 1);
+      const fretGap = usableW/state.frets;
+
+      // Fondo
+      const bg = rect(0,0,W,H,'#0b0f19'); svg.appendChild(bg);
+
+      // Trastes y marcadores
+      for(let f=0; f<=state.frets; f++){
+        const x = marginL + f * fretGap;
+        const line = lineEl(x, marginT, x, marginT+usableH, f===0?'nut':'fret');
+        svg.appendChild(line);
+        const marks = [3,5,7,9,12,15,17,19,21,24];
+        if(marks.includes(f)){
+          const ys = (f===12||f===24) ? [H/2 - 12, H/2 + 12] : [H/2];
+          ys.forEach(y=>{ const c = circle(x - fretGap/2, y, 6, 'marker'); svg.appendChild(c); });
+        }
+      }
+      for(let s=0;s<strCount;s++){
+        const y = marginT + s*strGap; svg.appendChild(lineEl(marginL, y, marginL+usableW, y, 'string'));
+      }
+
+      const tuning = getTuning();
+      const stringsToDraw = state.lefty ? [...tuning].reverse() : tuning;
+      stringsToDraw.forEach((openPitch, sIndex)=>{
+        const y = marginT + sIndex*strGap;
+        for(let f=0; f<=state.frets; f++){
+          const x = marginL + (f-0.5)*fretGap; if(f===0) continue;
+          const added = addSemis(openPitch, f);
+          const noteName = nameFromIdx(added.idx, state.flats);
+          const g = group('pos'); g.dataset.note = noteName; g.dataset.fret = f; g.dataset.string = sIndex;
+          const dot = circle(x, y, 12, 'noteDot');
+          const lbl = textEl(x, y+4, state.showNames ? noteName : '', 'noteLbl', 'middle');
+          g.appendChild(dot); g.appendChild(lbl);
+          g.addEventListener('click', ()=>{
+            highlightOnce(dot); const midi = midiFromPitch(openPitch) + f; playPitch(freqFromMidi(midi));
+          });
+          svg.appendChild(g);
+        }
+      });
+    }
+
+    function highlightOnce(el){ el.classList.add('playing'); setTimeout(()=>el.classList.remove('playing'), 280); }
+    function rect(x,y,w,h,fill){ const r = document.createElementNS('http://www.w3.org/2000/svg','rect'); r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h); r.setAttribute('fill',fill); return r; }
+    function lineEl(x1,y1,x2,y2,cls){ const l = document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('class',cls); return l; }
+    function circle(cx,cy,r,cls){ const c = document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r); c.setAttribute('class',cls); return c; }
+    function textEl(x,y,txt,cls,anchor='start'){ const t = document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('class',cls); t.setAttribute('font-size','12'); t.setAttribute('text-anchor',anchor); t.textContent = txt; return t; }
+    function group(cls){ const g = document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class',cls); return g; }
+    function getTuning(){ return TUNINGS[state.strings]; }
+
+    // Claves/tonos en español para selects
+    const keysES = ES_SHARP; // por defecto mostramos en #; si el usuario marca ♭, solo afecta al diapasón
+    const keySel = document.getElementById('keySel');
+    const songKeySel = document.getElementById('songKey');
+    keysES.forEach(k=>{ const o1=document.createElement('option'); o1.value=k; o1.textContent=k; keySel.appendChild(o1); const o2=document.createElement('option'); o2.value=k; o2.textContent=k; songKeySel.appendChild(o2); });
+    keySel.value='La'; songKeySel.value='Mi';
+
+    // Fórmulas de intervalos
+    const FORMULAS = {
+      'scale_major':[0,2,4,5,7,9,11,12],
+      'scale_minor':[0,2,3,5,7,8,10,12],
+      'penta_major':[0,2,4,7,9,12],
+      'penta_minor':[0,3,5,7,10,12],
+      'blues':[0,3,5,6,7,10,12],
+      'arp_maj':[0,4,7,12],
+      'arp_min':[0,3,7,12],
+      'arp_dom7':[0,4,7,10,12],
+      'arp_min7':[0,3,7,10,12],
+      'arp_maj7':[0,4,7,11,12]
+    };
+
+    function clearHighlights(){ svg.querySelectorAll('.noteDot').forEach(d=>d.classList.remove('emph')); }
+
+    function showPatternOnBoard(type, key, boxFret){
+      clearHighlights();
+      const idxRoot = noteIndex(key);
+      const validSet = new Set((FORMULAS[type]||[]).map(i=> (idxRoot+i)%12 ));
+      if(!validSet || validSet.size===0){
+        svg.querySelectorAll('.pos').forEach(g=>{ const f = parseInt(g.dataset.fret,10); const dot = g.querySelector('.noteDot'); if(f>=boxFret && f<boxFret+4){ dot.classList.add('emph'); } });
+        return;
+      }
+      const minF = Math.max(1, boxFret-1), maxF = Math.min(state.frets, boxFret+5);
+      svg.querySelectorAll('.pos').forEach(g=>{
+        const f = parseInt(g.dataset.fret,10);
+        const note = g.dataset.note;
+        const idx = noteIndex(note);
+        const dot = g.querySelector('.noteDot');
+        if(f>=minF && f<=maxF && validSet.has(idx)) dot.classList.add('emph');
+      });
+    }
+
+    function playSequence(type, key, boxFret){
+      const nodes = [...svg.querySelectorAll('.pos')].filter(g => g.querySelector('.noteDot.emph'));
+      if(nodes.length===0){ showPatternOnBoard(type,key,boxFret); }
+      const seq = [...svg.querySelectorAll('.pos')].filter(g => g.querySelector('.noteDot.emph'));
+      if(seq.length===0) return;
+      const bpm = parseInt(document.getElementById('bpm').value,10)||80;
+      const beatMs = 60000/bpm; let i=0;
+      const timer = setInterval(()=>{
+        const g = seq[i%seq.length]; const dot = g.querySelector('.noteDot'); highlightOnce(dot);
+        const sIndex = parseInt(g.dataset.string,10); const f = parseInt(g.dataset.fret,10);
+        const tuning = state.lefty ? [...getTuning()].reverse() : getTuning();
+        const open = tuning[sIndex]; const midi = midiFromPitch(open)+f; playPitch(freqFromMidi(midi));
+        i++; if(i>=seq.length*2){ clearInterval(timer); }
+      }, beatMs);
+    }
+
+    // Guardado de patrones (acepta nombres ES/EN en el input, pero muestra ES)
+    const songList = document.getElementById('songList');
+    function loadSongs(){
+      const data = JSON.parse(localStorage.getItem('bass_songs')||'[]');
+      songList.innerHTML='';
+      data.forEach((s,idx)=>{
+        const li = document.createElement('li'); li.className='card';
+        const title = document.createElement('div');
+        title.innerHTML = `<strong>${s.title}</strong> <span class="muted">[${s.key}]</span>`;
+        const seq = document.createElement('div'); seq.className='muted'; seq.textContent = s.seq;
+        const actions = document.createElement('div'); actions.className='inline'; actions.style.marginTop='6px';
+        const showBtn = document.createElement('button'); showBtn.className='btn alt'; showBtn.textContent='Mostrar en diapasón';
+        const delBtn = document.createElement('button'); delBtn.className='btn warn'; delBtn.textContent='Eliminar';
+        showBtn.onclick = ()=>{
+          clearHighlights();
+          const tokens = s.seq.split(/[\s,|]+/).map(t=>t.trim()).filter(Boolean);
+          const wanted = new Set(tokens.map(tok=>{
+            const mES = /^(Do|Re|Mi|Fa|Sol|La|Si)(#|b)?/i.exec(tok);
+            if(mES) return (mES[1][0].toUpperCase()+mES[1].slice(1).toLowerCase()) + (mES[2]||'');
+            const mEN = /^([A-Ga-g])(#|b)?/.exec(tok);
+            if(mEN){
+              // Convertir EN -> índice -> ES nombre
+              const en = (mEN[1].toUpperCase() + (mEN[2]||''));
+              const idx = noteIndex(en);
+              return nameFromIdx(idx, false);
+            }
+            return tok;
+          }));
+          svg.querySelectorAll('.pos').forEach(g=>{ const note = g.dataset.note; const dot = g.querySelector('.noteDot'); if(wanted.has(note)){ dot.classList.add('emph'); } });
+        };
+        delBtn.onclick = ()=>{
+          const arr = JSON.parse(localStorage.getItem('bass_songs')||'[]');
+          arr.splice(idx,1); localStorage.setItem('bass_songs', JSON.stringify(arr)); loadSongs();
+        };
+        actions.appendChild(showBtn); actions.appendChild(delBtn);
+        li.appendChild(title); li.appendChild(seq); li.appendChild(actions);
+        songList.appendChild(li);
+      });
+    }
+
+    // Controles
+    document.getElementById('startMetro').addEventListener('click', ()=>{
+      if(metroTimer) return; const bpm = parseInt(document.getElementById('bpm').value,10)||80; const meter = parseInt(document.getElementById('meter').value,10)||4; const beatMs = 60000/bpm; metroCount = 0; clickSound(true); metroTimer = setInterval(()=>{ metroCount=(metroCount+1)%meter; clickSound(metroCount===0); }, beatMs);
+    });
+    document.getElementById('stopMetro').addEventListener('click', ()=>{ clearInterval(metroTimer); metroTimer = null; });
+    document.getElementById('stringsSel').addEventListener('change', e=>{ state.strings = e.target.value; buildBoard(); });
+    document.getElementById('fretsInp').addEventListener('change', e=>{ let v = parseInt(e.target.value,10)||16; v = Math.min(24, Math.max(12, v)); state.frets=v; e.target.value=v; buildBoard(); });
+    document.getElementById('handSel').addEventListener('change', e=>{ state.lefty = e.target.value==='left'; buildBoard(); });
+    document.getElementById('showNoteNames').addEventListener('change', e=>{ state.showNames = e.target.checked; buildBoard(); });
+    document.getElementById('flatsMode').addEventListener('change', e=>{ state.flats = e.target.checked; buildBoard(); });
+
+    document.getElementById('showOnBoard').addEventListener('click', ()=>{ const type = document.getElementById('exerciseType').value; const key = document.getElementById('keySel').value; const box = parseInt(document.getElementById('boxFret').value,10)||5; showPatternOnBoard(type,key,box); });
+    document.getElementById('playSeq').addEventListener('click', ()=>{ const type = document.getElementById('exerciseType').value; const key = document.getElementById('keySel').value; const box = parseInt(document.getElementById('boxFret').value,10)||5; playSequence(type,key,box); });
+    document.getElementById('clearBoard').addEventListener('click', clearHighlights);
+
+    document.getElementById('addSong').addEventListener('click', ()=>{
+      const title = (document.getElementById('songTitle').value||'').trim();
+      const key = document.getElementById('songKey').value;
+      const seq = (document.getElementById('songSeq').value||'').trim();
+      if(!title || !seq){ alert('Escribe título y secuencia.'); return; }
+      const arr = JSON.parse(localStorage.getItem('bass_songs')||'[]');
+      arr.push({title,key,seq, created: Date.now()});
+      localStorage.setItem('bass_songs', JSON.stringify(arr));
+      document.getElementById('songTitle').value=''; document.getElementById('songSeq').value=''; loadSongs();
+    });
+
+    // Service Worker embebido
+    if('serviceWorker' in navigator){
+      const swCode = `
+        const CACHE = 'bass-app-v1-es';
+        const ASSETS = [self.location.href, 'apple-touch-icon.png', 'favicon-32x32.png', 'favicon-16x16.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'manifest.webmanifest'];
+        self.addEventListener('install', e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))); });
+        self.addEventListener('activate', e=>{ e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); });
+        self.addEventListener('fetch', e=>{ e.respondWith(caches.match(e.request).then(r=> r || fetch(e.request).then(resp=>{ if(e.request.method==='GET'){ const copy = resp.clone(); caches.open(CACHE).then(c=>c.put(e.request, copy)); } return resp; }).catch(()=>caches.match(self.location.href)))); });
+      `;
+      const blob = new Blob([swCode], {type:'text/javascript'});
+      const url = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url);
+    }
+
+    // Inicialización
+    buildBoard();
+    loadSongs();
+  </script>
+</body>
+</html>
